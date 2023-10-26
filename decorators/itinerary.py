@@ -18,17 +18,41 @@ def post_condition(predicate):
     return function_decorator
 
 
+def invariant(predicate):
+    function_decorator = post_condition(predicate)
+
+    def class_decorator(cls):
+        members = list(vars(cls).items())
+        for name, member in members:
+            if inspect.isfunction(member):
+                decorated_member = function_decorator(member)
+                setattr(cls, name, decorated_member)
+        return cls
+
+    return class_decorator
+
+
+def no_duplicates(itinerary):
+    already_seen = set()
+    for location in itinerary._locations:
+        if location in already_seen:
+            return False
+        already_seen.add(location)
+    return True
+
+
 def at_least_two_locations(itinerary):
     return len(itinerary._locations) >= 2
 
 
+@invariant(no_duplicates)
+@invariant(at_least_two_locations)
 class Itinerary:
 
     @classmethod
     def from_locations(cls, *locations):
         return cls(locations)
 
-    @post_condition(at_least_two_locations)
     def __init__(self, locations):
         self._locations = list(locations)
 
@@ -47,11 +71,9 @@ class Itinerary:
     def destination(self):
         return self._locations[-1]
 
-    @post_condition(at_least_two_locations)
     def add(self, location):
         self._locations.append(location)
 
-    @post_condition(at_least_two_locations)
     def remove(self, name):
         removal_indexes = [
             index for index, location in enumerate(self._locations) if location.name == name
@@ -59,7 +81,6 @@ class Itinerary:
         for index in reversed(removal_indexes):
             del self._locations[index]
 
-    @post_condition(at_least_two_locations)
     def truncate_at(self, name):
         stop = None
         for index, location in enumerate(self._locations):
