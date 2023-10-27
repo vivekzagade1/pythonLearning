@@ -1,6 +1,7 @@
 import inspect
 
 from decorators.position import *
+from dataclasses import dataclass
 
 
 def auto_repr(cls):
@@ -40,9 +41,18 @@ def auto_repr(cls):
     return cls
 
 
-@auto_repr
+# @auto_repr
+@dataclass(eq=True, frozen=True)
 class Location:
+    name: str
+    position: Position
 
+    def __post_init__(self):
+        if self.name == "":
+            raise ValueError("Location name can't be empty")
+
+
+"""
     def __init__(self, name, position):
         self._name = name
         self._position = position
@@ -61,6 +71,14 @@ class Location:
     def __str__(self):
         return self.name
 
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.name == other.name and self.position == other.position
+
+    def __hash__(self):
+        return hash((self.name, self.position))
+"""
 
 hong_kong = Location("Hong Kong", EarthPosition(22.29, 114.16))
 stockholm = Location("Stockholm", EarthPosition(22.29, 114.16))
